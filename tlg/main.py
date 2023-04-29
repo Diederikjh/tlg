@@ -188,22 +188,16 @@ def rotate_clockwise(shape):
     return [list(col) for col in zip(*shape[::-1])]
 
 def check_line_completion(grid):
-    # TODO maybe make top row zeros always
     global score
-    grid_height = len(grid)
-    grid_width = len(grid[0])
-
-    completed_lines = []
-    for row in range(grid_height):
-        if all(grid[row][col] != 0 for col in range(grid_width)):
-            completed_lines.append(row)
-
-    for line in sorted(completed_lines, reverse=False):
-        for row in range(line, 0, -1):
-            for col in range(grid_width):
-                grid[row][col] = grid[row-1][col]
-        
-    score += len(completed_lines) * 10
+    row_idx = 0
+    while row_idx < len(grid):
+        # If the row has no zeros, remove it and add an empty row at the top
+        if not any(cell == 0 for cell in grid[row_idx]):
+            grid.pop(row_idx)
+            grid.insert(0, [0] * len(grid[0]))
+            score += 10
+        else:
+            row_idx += 1
 
 def handle_piece_collided():
     global running, piece_speed, fall_delay, score, game_over, current_piece, next_piece

@@ -15,7 +15,7 @@ BACKGROUND_COLOR = (255, 255, 255)
 OUTLINE_WIDTH = 1
 OUTLINE_COLOR = (0, 0, 0)
 
-FPS = 20
+FPS = 30
 
 # Define the colors for the shapes
 RED = (255, 0, 0)
@@ -61,14 +61,18 @@ GRID_WIDTH = WINDOW_WIDTH // BLOCK_SIZE
 GRID_HEIGHT = WINDOW_HEIGHT // BLOCK_SIZE
 
 SCORE_WIDTH = 150
+BASE_SPEED = 5
+
 
 # Create the game window
 screen = pygame.display.set_mode((WINDOW_WIDTH + SCORE_WIDTH, WINDOW_HEIGHT))
 
 running = True
 # Define the initial piece speed in grid moves per second
-piece_speed = 5
+piece_speed = BASE_SPEED
 fall_delay = 1000 // piece_speed
+
+piece_speed_boost = False
 
 score = 0
 
@@ -200,7 +204,7 @@ def check_line_completion(grid):
             row_idx += 1
 
 def handle_piece_collided():
-    global running, piece_speed, fall_delay, score, game_over, current_piece, next_piece
+    global running, piece_speed, score, game_over, current_piece, next_piece, piece_speed_boost
     add_piece_to_grid(current_piece, grid)
     check_line_completion(grid)
     current_piece = next_piece
@@ -208,10 +212,7 @@ def handle_piece_collided():
     if check_collision(current_piece, grid):
         game_over = True
 
-    # Reset speed if it was made faster with down arrow
-    if piece_speed != 5:
-        piece_speed = 5
-        fall_delay = 1000 // piece_speed
+    piece_speed_boost = False
     score += 1
 
 def render_score(screen, score):
@@ -232,9 +233,20 @@ def render_next(screen, next_piece):
 
     draw_piece_at(next_piece, GRID_WIDTH + 2, 5)
 
+def set_speed(new_speed):
+    global speed, fall_delay
+    speed = new_speed
+    fall_delay = 1000 // speed
+
+def update_speed_for_score():
+    global speed, score
+    score_speed_penalty = score // 50
+    new_speed = BASE_SPEED + score_speed_penalty
+    set_speed(new_speed) 
+
 # Define the main function
 async def main():
-    global running, piece_speed, fall_delay, score, game_over, current_piece, next_piece, smallFont
+    global running, piece_speed, fall_delay, score, game_over, current_piece, next_piece, smallFont, piece_speed_boost
 
     # Initialize Pygame
     pygame.init()
@@ -270,8 +282,7 @@ async def main():
                     move_shape_right(current_piece) 
                     moved = True
                 elif event.key == pygame.K_DOWN and not moved:
-                    piece_speed = 20
-                    fall_delay = 1000 // piece_speed
+                    piece_speed_boost = True
                 elif event.key == pygame.K_UP:
                     current_piece["shape"] = rotate_clockwise(current_piece["shape"])
                     right_edge = get_right_edge(current_piece)
@@ -314,14 +325,16 @@ async def main():
         else:
             # Move the current piece down
             fall_counter += clock.tick(FPS)
-            if fall_counter >= fall_delay:
+            # Move the current piece down at normal speed, or 4x speed if speed boost is active 
+            if fall_counter >= fall_delay or (piece_speed_boost and fall_counter >= (fall_delay//4)):
                 # Move the current piece down
                 current_piece["y"] += 1
                 if check_collision(current_piece, grid):
                     current_piece["y"] -= 1
                     handle_piece_collided()
-
                 fall_counter = 0
+
+            update_speed_for_score()
 
             # Clear the screen
             screen.fill((255, 255, 255))

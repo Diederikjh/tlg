@@ -4,6 +4,7 @@ import pygame
 import random
 import asyncio
 import sys
+import time
 
 # Define the size of the game window and the size of each block
 WINDOW_WIDTH = 200
@@ -191,6 +192,15 @@ def move_shape_left(current_piece):
 def rotate_clockwise(shape):
     return [list(col) for col in zip(*shape[::-1])]
 
+def top_control_rect_height(screen_height):
+    return int(screen_height / 3)
+
+def bottom_control_rect_height(screen_height):
+    return int(3 * screen_height / 4)
+
+def left_right_control_rect_width(screen_width):
+    return screen_width / 2
+
 def check_line_completion(grid):
     global score
     row_idx = 0
@@ -215,6 +225,17 @@ def handle_piece_collided():
     piece_speed_boost = False
     score += 1
 
+def handle_shape_rotate(current_piece):
+    current_piece["shape"] = rotate_clockwise(current_piece["shape"])
+    right_edge = get_right_edge(current_piece)
+        # Check if the rotated shape is out of bounds
+    if right_edge + current_piece["x"] >= GRID_WIDTH:
+        # If so, and move the shape off the right edge
+        current_piece["x"] = GRID_WIDTH - (right_edge +1)
+    if get_left_edge(current_piece) + current_piece["x"] < 0:
+        # If so, move the shape shape off the left edge
+        current_piece["x"] = 0
+
 def render_score(screen, score):
     global smallFont
     text = smallFont.render("Score: " + str(score), True, BLACK)
@@ -232,6 +253,33 @@ def render_next(screen, next_piece):
     screen.blit(text, text_rect)
 
     draw_piece_at(next_piece, GRID_WIDTH + 2, 5)
+
+def render_control_areas():
+    global smallFont
+    screen_width, screen_height = screen.get_size()
+    top_height = top_control_rect_height(screen_height)
+    bottom_height = bottom_control_rect_height(screen_height)
+
+    # Draw control rectangle outlines
+    colors = [PINK, MINT, PERIWINKLE, ORANGE]
+    rects = [pygame.Rect(0, 0, screen_width, top_height),
+             pygame.Rect(0, top_height, screen_width // 2, bottom_height - top_height),
+             pygame.Rect(left_right_control_rect_width(screen_width), top_height, left_right_control_rect_width(screen_width), bottom_height - top_height),
+             pygame.Rect(0, bottom_height, screen_width, screen_height - bottom_height)]
+
+    for color, rect in zip(colors, rects):
+        pygame.draw.rect(screen, color, rect, 2)
+
+    # Render lables
+    text_labels = [('rotate', colors[0]),
+                   ('left', colors[1]),
+                   ('right', colors[2]),
+                   ('down', colors[3])]
+    
+    for i, (label, color) in enumerate(text_labels):
+        text = smallFont.render(label, True, color)
+        text_rect = text.get_rect(center=rects[i].center)
+        screen.blit(text, text_rect)
 
 def set_speed(new_speed):
     global speed, fall_delay
@@ -266,6 +314,9 @@ async def main():
     # Define the initial fall delay and counter
     fall_counter = 0
 
+    click_counter = 0
+    start_time = 0
+
     paused = False
 
     while running:
@@ -284,15 +335,7 @@ async def main():
                 elif event.key == pygame.K_DOWN and not moved:
                     piece_speed_boost = True
                 elif event.key == pygame.K_UP:
-                    current_piece["shape"] = rotate_clockwise(current_piece["shape"])
-                    right_edge = get_right_edge(current_piece)
-                    # Check if the rotated shape is out of bounds
-                    if right_edge + current_piece["x"] >= GRID_WIDTH:
-                        # If so, and move the shape off the right edge
-                        current_piece["x"] = GRID_WIDTH - (right_edge +1)
-                    if get_left_edge(current_piece) + current_piece["x"] < 0:
-                        # If so, move the shape shape off the left edge
-                        current_piece["x"] = 0 
+                    handle_shape_rotate(current_piece) 
                 elif event.key == pygame.K_SPACE and not moved:
                     # Move the current piece down, checking for collisions
                     while True:
@@ -305,6 +348,27 @@ async def main():
                     paused = not paused
                 elif event.key == pygame.K_ESCAPE:
                     running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and not moved:
+                x, y = event.pos
+                screen_width, screen_height = screen.get_size()
+                
+                if click_counter == 0:
+                    start_time = time.time()
+
+                click_counter += 1
+
+                # Check if the click is on the top or bottom 1/3 of the screen
+                if y < top_control_rect_height(screen_height):
+                    handle_shape_rotate(current_piece)
+                elif y > bottom_control_rect_height(screen_height):
+                    piece_speed_boost = True
+                # Check if the click is on the left or right half of the screen
+                elif x < left_right_control_rect_width(screen_width):
+                    move_shape_left(current_piece)
+                    moved = True
+                else:
+                    move_shape_right(current_piece) 
+                    moved = True
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] and not moved:
@@ -347,13 +411,17 @@ async def main():
             render_score(screen, score)
             render_next(screen, next_piece)
 
+            # Draw control areas outlines if clicked less than 10 times and within 10 seconds of first click
+            if click_counter > 0 and click_counter < 10 and time.time() - start_time < 10 :
+                render_control_areas()
+
         # Update the screen
         pygame.display.flip()
 
         # Tick the clock
         clock.tick(FPS)
-        await asyncio.sleep(0)  # Very important, and keep it 0
-
+        await asyncio.sleep(0)
+        
     pygame.quit()
 
 if __name__ == '__main__':

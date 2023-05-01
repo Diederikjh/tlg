@@ -7,7 +7,7 @@ Mostly to play around with some AI coding tools to see what they can do.  I'd gu
 ## It's live!
 
 
-See a live demo of it (running via [Pybag](https://pygame-web.github.io/) and web assembly) at https://diederikjh.github.io/tlg/   Warning quite CPU intensive via web assembly
+See a live demo of it (running via [Pygbag](https://pygame-web.github.io/) and web assembly) at https://diederikjh.github.io/tlg/   Warning quite CPU intensive via web assembly
 
 ## Mobile controls
 

@@ -70,8 +70,7 @@ screen = pygame.display.set_mode((WINDOW_WIDTH + SCORE_WIDTH, WINDOW_HEIGHT))
 
 running = True
 # Define the initial piece speed in grid moves per second
-piece_speed = BASE_SPEED
-fall_delay = 1000 // piece_speed
+fall_delay = 1000 // BASE_SPEED
 
 piece_speed_boost = False
 
@@ -214,7 +213,7 @@ def check_line_completion(grid):
             row_idx += 1
 
 def handle_piece_collided():
-    global running, piece_speed, score, game_over, current_piece, next_piece, piece_speed_boost
+    global running, score, game_over, current_piece, next_piece, piece_speed_boost
     add_piece_to_grid(current_piece, grid)
     check_line_completion(grid)
     current_piece = next_piece
@@ -282,19 +281,18 @@ def render_control_areas():
         screen.blit(text, text_rect)
 
 def set_speed(new_speed):
-    global speed, fall_delay
-    speed = new_speed
-    fall_delay = 1000 // speed
+    global fall_delay
+    fall_delay = 1000 // new_speed
 
 def update_speed_for_score():
-    global speed, score
+    global score
     score_speed_penalty = score // 50
     new_speed = BASE_SPEED + score_speed_penalty
     set_speed(new_speed) 
 
 # Define the main function
 async def main():
-    global running, piece_speed, fall_delay, score, game_over, current_piece, next_piece, smallFont, piece_speed_boost
+    global running, fall_delay, score, game_over, current_piece, next_piece, smallFont, piece_speed_boost
 
     # Initialize Pygame
     pygame.init()

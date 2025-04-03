@@ -85,7 +85,7 @@ for i in range(GRID_HEIGHT):
     grid.append(row)
 
 # Define a function to check for collisions between a piece and the grid
-def check_collision(piece, grid):
+def check_collision_with_shapes(piece, grid):
     shape = piece["shape"]
     x = piece["x"]
     y = piece["y"]
@@ -178,12 +178,12 @@ def move_shape_right(current_piece):
     current_piece["x"] += 1
     if get_right_edge(current_piece) + current_piece["x"] >= GRID_WIDTH:
         current_piece["x"] -= 1
-    if check_collision(current_piece, grid):
+    if check_collision_with_shapes(current_piece, grid):
         current_piece["x"] -= 1
    
 def move_shape_left(current_piece):
     current_piece["x"] -= 1
-    if check_collision(current_piece, grid):
+    if check_collision_with_shapes(current_piece, grid):
         current_piece["x"] += 1
     if get_left_edge(current_piece) + current_piece["x"] < 0:
         current_piece["x"] += 1 # move back to previous position
@@ -218,7 +218,7 @@ def handle_piece_collided():
     check_line_completion(grid)
     current_piece = next_piece
     next_piece = new_piece()
-    if check_collision(current_piece, grid):
+    if check_collision_with_shapes(current_piece, grid):
         game_over = True
 
     piece_speed_boost = False
@@ -338,7 +338,7 @@ async def main():
                     # Move the current piece down, checking for collisions
                     while True:
                         current_piece["y"] += 1
-                        if check_collision(current_piece, grid):
+                        if check_collision_with_shapes(current_piece, grid):
                             current_piece["y"] -= 1
                             handle_piece_collided()
                             break
@@ -391,7 +391,7 @@ async def main():
             if fall_counter >= fall_delay or (piece_speed_boost and fall_counter >= (fall_delay//4)):
                 # Move the current piece down
                 current_piece["y"] += 1
-                if check_collision(current_piece, grid):
+                if check_collision_with_shapes(current_piece, grid):
                     current_piece["y"] -= 1
                     handle_piece_collided()
                 fall_counter = 0
